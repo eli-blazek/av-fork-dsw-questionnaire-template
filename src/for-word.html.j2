@@ -1,0 +1,267 @@
+<!DOCTYPE HTML>
+{# ------------------------------------------------------------------------------------ #}
+{#  VARIABLES                                                                           #}
+{# ------------------------------------------------------------------------------------ #}
+{%- set dc = ctx|to_context_obj -%}
+{# ------------------------------------------------------------------------------------ #}
+{#  TAGS, REFERNCES, and EXPERTS MACROS                                                 #}
+{# ------------------------------------------------------------------------------------ #}
+{# #}
+{# Tohle makro nejspis handluje to, jak se renderuji odkazy v ramci toho dokumentu. Dost uzitecne, nesahat#}
+{# Page referencis je napojení na kapitoly z knihy - vyskytuje se v tom common KM#}
+
+{# To bude neco podobnyho. Ano. Nechat.#}
+{%- macro renderURLReferences(question) -%}
+  {% set refs = question.url_references %}
+  {% if refs|length > 0 %}
+    <div>
+      🔗 <b>External Links:</b> {% for reference in refs %}<a href="{{reference.url}}" target="_blank"><i>{{reference.label}}</i></a>{% if not loop.last %}, {% endif %}{% endfor %}
+    </div>
+  {% endif %}
+{%- endmacro -%}
+{# Taky bych nechala #}
+{# dtto#}
+{%- macro renderExperts(question) -%}
+  {% if question.experts|length > 0 %}
+    <div>
+      🙋 <b>Experts:</b> {% for expert in question.experts %}<i>{{expert.name}} (<a href="mailto:{{expert.email}}">{{expert.email}}</a>){% if not loop.last %}, {% endif %}</i>{% endfor %}
+    </div>
+  {% endif %}
+{%- endmacro -%}
+{# ------------------------------------------------------------------------------------ #}
+{#  ANSWERS MACROS                                                                      #}
+{# ------------------------------------------------------------------------------------ #}
+{# Podle promennych, ktere to nastavuje je tohle to, co nas nejvic zajima. Vyrenderuje to tu odpoved s otazkou. Rozhodne nechat. Pro value otazku. #}
+{%- macro renderAnswerValue(question, reply, path, humanIdentifier) -%}
+  <div>
+    <p>
+          {% if reply is of_type("StringReply") %}
+        <span>{{reply.value}}</span>
+      {% else %}
+        <span>{{reply.value.rsplit(" ![]")[0]|markdown}}</span>
+        {% if reply.is_integration %}
+          {# Integration #}
+          {% set integration = question.integration %}
+          <span>
+            ({{ integration.name }}: <a href="{{ integration.item(reply.item_id) }}">{{ reply.item_id }}</a>)
+          </span>
+        {% endif %}
+      {% endif %}
+    </p>
+  </div>
+{%- endmacro -%}
+{# DDTO pro multiple choice otazku. Mysl9m.  #}
+{%- macro renderAnswerOption(question, reply, path, humanIdentifier) -%}
+  {% set hi = question.answers.index(reply.answer) %}
+  {% set answer = reply.answer %}
+  {% set path = path ~ "." ~ answer.uuid %}
+  {% set humanIdentifier = humanIdentifier ~ "." ~ hi|of_alphabet %}
+  <div>
+    <p>
+         {# ❗✔️ smazany emoji#}
+      <span>{{ hi|of_alphabet }}. {{answer.label}}</span>
+    </p>
+    {% if answer.advice %}
+    <p>
+      <b>Advice:</b> {{answer.advice|markdown}}
+    </p>
+    {% endif %}
+    {% if answer.followups|length > 0 %}
+      <div>
+        {% set hiPrefix = humanIdentifier ~ "." %}
+        {% for question in answer.followups %}
+          {% set x = loop.index %}
+          {{ renderQuestion(question, path, hiPrefix ~ x) }}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{%- endmacro -%}
+{# DDTO pro list otazku. Nevim.  #}
+{%- macro renderAnswerList(question, reply, path, humanIdentifier) -%}
+  <div>
+    <h4>Answers ({{reply.items|length}} items)</h4>
+    {% set itemPathPrefix = path ~ "." %}
+    {% set hiPrefix = humanIdentifier ~ "." %}
+    {% for i in reply.items %}
+      {% set itemPath = itemPathPrefix ~ i %}
+      {% set itemHumanIdenfifier = hiPrefix ~ (loop.index - 1)|of_alphabet %}
+      <div class="answer-item" id="{{itemPath}}">
+        <div class="followups">
+          {% for question in question.followups %}
+            {% set x = loop.index %}
+            {{ renderQuestion(question, itemPath, itemHumanIdenfifier ~ "." ~ x) }}
+          {% else %}
+            <i>No follow up questions</i>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <i>No answer items</i>
+    {% endfor %}
+  </div>
+{%- endmacro -%}
+{# to se mi zda, ze jen postupne taha ruzny druhy odpovedi #}
+{%- macro renderChoiceList(question, reply, path, humanIdentifier) -%}
+  <div>
+    <ul>
+    {% for choice in question.choices %}
+      {%- if choice in reply.choices %}
+          {# smazany emoji#}
+        <li> {{ choice.label }}</li>
+      {%- else %}
+          {#smazany emoji #}
+        <li> {{ choice.label }}</li>
+      {%- endif %}
+    {% endfor %}
+    </ul>
+  </div>
+{%- endmacro -%}
+{# ------------------------------------------------------------------------------------ #}
+{#  QUESTION MACROS                                                                     #}
+{# ------------------------------------------------------------------------------------ #}
+{%- macro renderQuestionExtras(question) -%}
+  <div>
+    {{ renderURLReferences(question) }}
+    {{ renderExperts(question) }}
+  </div>
+{%- endmacro -%}
+{%- macro renderQuestionReply(question, path, humanIdentifier) -%}
+  {# Question - Answers #}
+  {% set reply = question.replies.get(path) %}
+  {% if reply and reply.value %}
+    {% if question is of_type("ValueQuestion") and reply is of_type("StringReply") %}
+      {{ renderAnswerValue(question, reply, path, humanIdentifier) }}
+    {% elif question is of_type("OptionsQuestion") and reply is of_type("AnswerReply") %}
+      {{ renderAnswerOption(question, reply, path, humanIdentifier) }}
+    {% elif question is of_type("ListQuestion") and reply is of_type("ItemListReply") %}
+      {{ renderAnswerList(question, reply, path, humanIdentifier) }}
+    {% elif question is of_type("IntegrationQuestion") and reply is of_type("IntegrationReply") %}
+      {{ renderAnswerValue(question, reply, path, humanIdentifier) }}
+    {% elif question is of_type("MultiChoiceQuestion") and reply is of_type("MultiChoiceReply") %}
+      {{ renderChoiceList(question, reply, path, humanIdentifier) }}
+    {% endif %}
+  {% else %}
+    <p> <i>This question has not been answered yet!</i></p>
+  {% endif %}
+{%- endmacro -%}
+{%- macro renderQuestion(question, path, humanIdentifier) -%}
+  {% set path = path ~ "." ~ question.uuid %}
+  <div>
+    <h2>{{humanIdentifier}}. {{question.title}}</h2>
+    {#  {{ renderTags(question) }}#}
+
+    {{ renderQuestionExtras(question) }}
+
+    {{ question.text|markdown }}
+
+    {{ renderQuestionReply(question, path, humanIdentifier) }}
+  </div>
+{%- endmacro -%}
+{# ------------------------------------------------------------------------------------ #}
+{#  CHAPTER MACROS                                                                      #}
+{# ------------------------------------------------------------------------------------ #}
+{# Deleted "Render report"" macro #} }
+{%- macro renderChapter(chapter, humanIdentifier) -%}
+      <section>
+        <h1>{{humanIdentifier|roman}}. {{chapter.title}}</h1>
+        <p>{{chapter.text|markdown}}</p>
+
+        <section>
+          {% for question in chapter.questions %}
+            {{ renderQuestion(question, chapter.uuid, loop.index) }}
+          {% endfor %}
+        </section>
+      </section>
+{%- endmacro -%}
+{# ------------------------------------------------------------------------------------ #}
+{#  HTML LAYOUT                                                                         #}
+{# ------------------------------------------------------------------------------------ #}
+{%- macro renderFrontPage() -%}
+  <table>
+    <tr>
+      <th>Organization</th>
+      <td>{{dc.org.name}}</td>
+    </tr>
+    {% if dc.qtn.created_by %}
+    <tr>
+      <th>Created by</th>
+      <td>{{dc.qtn.created_by.first_name}} {{dc.qtn.created_by.last_name}} (<a href="mailto:{{dc.qtn.created_by.email}}">{{dc.qtn.created_by.email}}</a>)</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <th>Based on</th>
+      <td>{{dc.pkg.name}}, {{dc.pkg.version}} (<code>{{dc.pkg.org_id}}:{{dc.pkg.km_id}}:{{dc.pkg.version}}</code>)</td>
+    </tr>
+    {% for version in dc.qtn.versions if version.uuid == dc.qtn.version %}
+    <tr>
+      <th>Version</th>
+      <td>{{version.name}} ({{ version.created_at|datetime_format("%d %b %Y %H:%M:%S") }} UTC)</td>
+    </tr>
+    {% endfor %}
+    {% if dc.current_phase %}
+    <tr>
+      <th>Project Phase</th>
+      <td>{{dc.current_phase.title}}</td>
+    </tr>
+    {% endif %}
+    {% if dc.qtn.project_tags|length > 0 %}
+    <tr>
+      <th>Project Tags</th>
+      <td class="tags-row">{% for tag in dc.qtn.project_tags %}<span class="tag project-tag">{{ tag }}</span> {% endfor %}</td>
+    </tr>
+    {% endif %}
+    {% if dc.qtn.description %}
+    <tr>
+      <th>Description</th>
+      <td>{{ dc.qtn.description }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <th>Created at</th>
+      <td>{{ dc.doc.created_at|datetime_format("%d %b %Y") }}</td>
+    </tr>
+  </table>
+
+  \newpage
+{%- endmacro -%}
+{%- macro renderVersionsOverview() -%}
+  <div>
+    <h2>History of Versions</h2>
+    <p>The named versions of this document:</p>
+    <ul>
+      {% for version in dc.qtn.versions|reverse %}
+        <li>
+          <strong>{{ version.name }}</strong> ({{ version.created_at|datetime_format("%d %b %Y") }})
+          <p>{{ version.description }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{%- endmacro -%}
+{%- macro renderContent() -%}
+  <div>
+    {% if dc.qtn.versions|length > 0 %}
+      {{ renderVersionsOverview() }}
+    {% endif %}
+    {% for chapter in dc.km.chapters %}
+      {#  \newpage #}
+      {{ renderChapter(chapter, loop.index) }}
+    {% else %}
+      <p><i>No chapters</i></p>
+    {% endfor %}
+  </div>
+{%- endmacro -%}
+{# ------------------------------------------------------------------------------------ #}
+{#  HTML TEMPLATE                                                                       #}
+{# ------------------------------------------------------------------------------------ #}
+<html>
+  <head>
+    <title>{{dc.qtn.name}}</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+      {{ renderFrontPage() }}
+      {{ renderContent() }}
+  </body>
+</html>
