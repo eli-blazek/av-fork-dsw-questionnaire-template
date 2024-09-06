@@ -1,7 +1,7 @@
 {
   "templateId": "questionnaire-report-av-fork",
   "organizationId": "dsw",
-  "version": "3.0.2",
+  "version": "3.0.5",
   "name": "Questionnaire Report AV fork",
   "description": "Exported questions and answers from a questionnaire",
   "license": "Apache-2.0",

@@ -2,7 +2,7 @@
 
 This is a fork of the default DSW template, created for Library of the Czech Academy of sciences. It is generally following the same phylosophy as the default template, but it simplifies the overall output. 
 
-** It currently works for HTML, PDF and JSON outputs. Word works with some reservations.
+** It currently works for HTML, PDF, Word and JSON outputs.
 Markdown and LaTeX are not supported at the moment.**
 
 
@@ -20,6 +20,8 @@ This document template for DSW is available as open-source via GitHub Repository
 * **Eli Blažková**
   * GitHub [eli-blazek](github.com/eli-blazek)
   * Orcid [0009-0004-5454-9514](https://orcid.org/0009-0004-5454-9514)
+* **Jindřich Fejfar**
+  * Orcid [https://orcid.org/0000-0002-2048-3682]
 
 ### Original authors
 
@@ -32,11 +34,14 @@ This document template for DSW is available as open-source via GitHub Repository
 
 
 ## Changelog
+### 3.0.5
+- Word temlate is now fully functional including all the themeing. 
+- Added Jindřich Fejfar as a contributor
+- Updated README to reflect the changes made to Word template.
+- Minor bug fixes. 
+
 ### 3.0.2 
 - Updated the word template (for-word.html.j2, reference.docx) to generate documents with AV branding. It is still all over the place
-
-### 3.0.2 
-
 
 ### 3.0.0 - AV fork
 - Deleted DMP and chapter based metrics reports (number of questions answered in each chapter/section) to simplify the output
