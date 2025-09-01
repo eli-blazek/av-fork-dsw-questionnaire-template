@@ -1,8 +1,12 @@
+
+**Note:This version is old and is being displayed only for archival purposes.**
+
+
 # Questionnaire Report AV ČR Fork 
 
 This is a fork of the default DSW template, created for Library of the Czech Academy of sciences. It is generally following the same phylosophy as the default template, but it simplifies the overall output. 
 
-** It currently works for HTML, PDF, Word and JSON outputs.
+**It currently works for HTML, PDF, Word and JSON outputs.
 Markdown and LaTeX are not supported at the moment.**
 
 
